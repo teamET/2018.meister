@@ -2,12 +2,52 @@
 from abc import ABCMeta,abstractmethod
 from icecream import ic
 from numba import jit
-import server
+import server as httpserver
 import importlib
 import threading
 
 MOTOR_NUM=4
 pwms=[[0,0] for i in range(MOTOR_NUM)]
+mode=0
+
+class  SubUdpServer(threading.Thread):
+    def __init__(self,shared_data):
+        super(SubUdpServer,self).__init__()
+        self.UDP_IP=""
+        self.UDP_PORT=5005
+        self.backlog=10
+        self.bufsize=1024
+        self.data=shared_data
+    def is_json(myjson):
+        try:
+            json_object = json.loads(myjson)
+        except ValueError as e:
+            return False
+        return True
+    @jit(nogil=True)
+    def run(self):
+        print('===  Sub Thread Starts===')
+        print("PORT",self.UDP_PORT)
+        sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        with closing(sock):
+            sock.bind((self.UDP_IP,self.UDP_PORT))
+            while True:
+                cnt=0
+                mes=sock.recv(self.bufsize)
+                raw=mes.decode('utf-8')
+                print('mes',mes,'raw',raw)
+                if raw == 'q':
+                    print('Sub process is terminated')
+                    break
+                elif raw is not '' : #and  self.is_json(raw) ==True:
+                    pwm_str=raw.split(',')
+                    for pwm in map(int,pwm_str):
+                        self.data[cnt]=pwm
+                        cnt+=1
+                    print(self.data)
+                else:
+                    print('empty message or not json ')
+#                time.sleep(1)
 
 class Motor(metaclass=ABCMeta):
     last=[0 for i in range(4)]
@@ -74,7 +114,8 @@ class PiMotor(Motor):
             ic(pwms)
             for i in range(4):
                 self.drive(i,pwms[i]);
- 
+class Arm:
+    pass
 
 
 class TxMotor(Motor):
@@ -87,9 +128,15 @@ class TxMotor(Motor):
 
 def main():
     motor=PiMotor()
+
+    #udp
+    server=SubUdpServer(pwms)
+    server.setDaemon(True)
+    server.start()
+
     threads=[
             threading.Thread(target=motor.run),
-            threading.Thread(target=server.run)]
+            threading.Thread(target=httpserver.run)]
     for thread in threads:
         thread.start()
     for thread in threads:
