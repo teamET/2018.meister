@@ -1,0 +1,13 @@
+
+versiion: 2
+jobs:
+    build:
+        working_directorry: ~
+        docker:
+            - image: circleci/python
+        steps:
+            - checkout
+            - run:
+                command: |
+                    pip3 install pep8
+                    pep8 .
