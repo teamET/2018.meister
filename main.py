@@ -80,6 +80,7 @@ class PiMotor(Motor):
         pigpio=importlib.util.find_spec("pigpio")
         if pigpio is None:
             print("pigpio is not found")
+            return None
 #            exit()
         else:
             print("found pigpio")
@@ -128,6 +129,10 @@ class TxMotor(Motor):
 
 def main():
     motor=PiMotor()
+    if motor is None:
+        print("pigpio not found")
+        exit()
+
 
     #udp
     server=SubUdpServer(pwms)
