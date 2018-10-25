@@ -1,8 +1,13 @@
 
 from abc import ABCMeta,abstractmethod
+from icecream import ic
 from numba import jit
-from flask import Flask
+import server
+import importlib
 import threading
+
+MOTOR_NUM=4
+pwms=[[0,0] for i in range(MOTOR_NUM)]
 
 class Motor(metaclass=ABCMeta):
     last=[0 for i in range(4)]
@@ -26,10 +31,19 @@ class Motor(metaclass=ABCMeta):
     def drive_pin():
         pass
 
+    @abstractmethod
+    def run():
+        pass
 
 class PiMotor(Motor):
-    self.pi=pigpio.pi()
     def __init__(self):
+        pigpio=importlib.util.find_spec("pigpio")
+        if pigpio is None:
+            print("pigpio is not found")
+#            exit()
+        else:
+            print("found pigpio")
+        self.pi=pigpio.pi()
         print('initialized pin is ',pins)
         self.pins=pins
         for pins in self.pins:
@@ -54,6 +68,13 @@ class PiMotor(Motor):
         elif BREAK is True:
             self.pi.set_PWM_dutycycle(self.pins[port][0],254)
             self.pi.set_PWM_dutycycle(self.pins[port][1],254)
+    @jit(nogil=True)
+    def run(self):
+        while True:
+            ic(pwms)
+            for i in range(4):
+                self.drive(i,pwms[i]);
+ 
 
 
 class TxMotor(Motor):
@@ -64,22 +85,16 @@ class TxMotor(Motor):
     def drive_pin():
         pass
 
-class Management_screen:
-    def __init__(self):
-        self.app=Flask(__name__)
-
-    def run():
-        self.app.run(debug=True,host='0.0.0.0',post=8080)
-
-    @self.app.route('/')
-    def index():
-        return "hello world"
-
-
-
 def main():
     motor=PiMotor()
-    manage=Management_screen()
+    threads=[
+            threading.Thread(target=motor.run),
+            threading.Thread(target=server.run)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join()
+#    motor.run()
 
 
 if __name__ == '__main__':
