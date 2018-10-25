@@ -3,6 +3,8 @@ from abc import ABCMeta,abstractmethod
 from icecream import ic
 from numba import jit
 import server as httpserver
+import sys
+import socket
 import importlib
 import threading
 
@@ -81,7 +83,6 @@ class PiMotor(Motor):
         if pigpio is None:
             print("pigpio is not found")
             return None
-#            exit()
         else:
             print("found pigpio")
         self.pi=pigpio.pi()
@@ -133,7 +134,6 @@ def main():
         print("pigpio not found")
         exit()
 
-
     #udp
     server=SubUdpServer(pwms)
     server.setDaemon(True)
@@ -150,4 +150,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterupt:
+        print("system interupted")
+        sys.exit()
