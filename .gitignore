@@ -1,5 +1,10 @@
 ### user configuration ###
 *.log
+*.md
+*.pptx
+*.pdf
+*.xlsx
+*.run
 
 # Created by https://www.gitignore.io/api/python
 
