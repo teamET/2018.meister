@@ -46,7 +46,7 @@ class UDPServer(object):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((self.addr, self.port))
         while True:
-            recv_data = self.sock.recv(self.data_size)
+            recv_data = self.sock.recv(self.data_size).decode()
             print('received data.'+str(recv_data))
             recv_data_list = str(recv_data).split(',')
             yield recv_data_list
@@ -58,8 +58,8 @@ def main():
     イテレータで受け取ったデータをyieldで渡している。
     おそらくこんな感じで，for文の中にサーボの制御も追加する？
     """
-    tcp = UDPServer()
-    for i in tcp.run():
+    udp = UDPServer()
+    for i in udp.run():
         print(i)
 
 
