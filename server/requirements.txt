@@ -2,4 +2,4 @@
 flask
 icecream
 numba
-
+pyserial==3.4
