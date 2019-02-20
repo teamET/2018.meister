@@ -6,6 +6,9 @@ verify_ssl = true
 [dev-packages]
 
 [packages]
+icecream = "*"
+numba = "*"
+Flask = "*"
 
 [requires]
 python_version = "2.7"
