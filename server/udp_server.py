@@ -1,4 +1,6 @@
 import socket
+import json
+from lynxmoton import move
 
 HOST_ADDR = '127.0.0.1'
 HOST_PORT = 50007
@@ -27,40 +29,35 @@ class UDPServer(object):
         self.sock = None
 
     def __del__(self):
-        """
-         デストラクタでソケットを閉じる。
-        """
         if self.sock:
             self.sock.close()
 
     def run(self):
         """
-         UPDサーバを立ち上げ，データが来たらイテレータを返すメソッド。
-         送られてくるデータのフォーマットは'x,y,z'を想定。
-
-        Yields
-        ------
-        recv_data_list: list
-            受け取ったデータのリスト['x', 'y', 'z']
+        Parameters
+        ----------
+        raw: str
+            "関数名/{x:100,y:200,z:400}"
         """
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((self.addr, self.port))
         while True:
-            recv_data = self.sock.recv(self.data_size)
-            print('received data.'+str(recv_data))
-            recv_data_list = str(recv_data).split(',')
-            yield recv_data_list
-
+            raw = self.sock.recv(self.data_size).decode()
+            try:
+                func,data=raw.split("/")
+                print(func,data)
+                yield func,data
+            except:
+                print("Error occured",raw)
+                continue
 
 def main():
-    """
-     クラスUDPServerのテスト。実質無限ループに入っているが，
-    イテレータで受け取ったデータをyieldで渡している。
-    おそらくこんな感じで，for文の中にサーボの制御も追加する？
-    """
-    tcp = UDPServer()
-    for i in tcp.run():
-        print(i)
+    udp = UDPServer()
+    funcs=[
+            move
+            ]
+    for func,data in udp.run():
+        locals().get(func)(**json.loads(data))
 
 
 if __name__ == '__main__':
