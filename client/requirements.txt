@@ -1,3 +1,0 @@
-
-yolo34py
-yolo34py-gpu
