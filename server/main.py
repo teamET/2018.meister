@@ -37,7 +37,7 @@ class UDPServer(object):
                 print(func, data)
                 yield func, data
             except Exception as e:
-                print(f"Error occured raw : {raw} , error: {e.message}")
+                print("Error occured raw : "+raw+" , error: "+e.message)
                 continue
 
 
