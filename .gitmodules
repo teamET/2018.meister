@@ -1,0 +1,3 @@
+[submodule "client/YOLO3-4-Py"]
+	path = client/YOLO3-4-Py
+	url = https://github.com/madhawav/YOLO3-4-Py
