@@ -35,7 +35,7 @@ def get_distance(x,y):
     return distance
 
 
-def main():
+def get_available():
     # darknet
     cfg,weights,data="cfg/yolov3.cfg","yolov3.weights","cfg/coco.data"
     net=Detector(bytes(cfg,encoding="utf-8"),bytes(weights,encoding="utf-8"),0,bytes(data,encoding="utf-8"))
@@ -78,8 +78,7 @@ def main():
         print(items)
     zed.close()
 
-
 if __name__ == "__main__":
-    main()
+    get_available()
 
 
