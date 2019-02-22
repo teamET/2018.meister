@@ -53,6 +53,7 @@ def get_available():
     runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_STANDARD  # Use STANDARD sensing mode
 
     image = core.PyMat()
+    image = np.delete(image,3,2)
     depth = core.PyMat()
     point_cloud = core.PyMat()
 
