@@ -1,9 +1,19 @@
+import math
 import al5d
+
+theta_4 = math.pi/4
+y0 = 3.03
+L_1 = 5.75
+L_2 = 7.375
+L_3 = 3.375
+
 
 a = al5d.AL5D('COM5')
 a.init()
+a.wrist(theta_4)
+a.wrist_rotate(math.pi/2)
 
-import os, sys, inspect,time,math
+import os, sys, inspect,time
 from time import sleep
 
 src_dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
@@ -14,15 +24,8 @@ src_dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
 lib_dir = os.path.abspath(os.path.join(src_dir, 'lib'))
 sys.path.insert(0, lib_dir)
 
-
 import socket,json
 import Leap
-
-theta_4 = math.pi/4
-y0 = 3.03
-L_1 = 5.75
-L_2 = 7.375
-L_3 = 3.375
 
 def inch_to_centimeter(n) :
     return n/2.54
@@ -45,11 +48,12 @@ def culc_theta(x,y,z,n) :
     if theta_6 < 0 : theta_6 = theta_6 + math.pi
     theta_2 = theta_6+math.atan(z/X)
     if theta_2 > math.pi/2 : theta_2 = theta_2-math.pi
+
     a.base(theta_1)
     a.shoulder(theta_2)
     a.elbow(theta_3)
-    if n == 1.0 : a.wrist(-math.pi / 3)
-    else : a.wrist(math.pi / 3)
+    if n == 1.0 : a.gripper(100)
+    else : a.gripper(0)
     print(theta_1,theta_2,theta_3,theta_4)
 
 
@@ -58,7 +62,7 @@ def culc_xyz(x,y,z,n) :
     X = L*x/150
     Y = -L*y/150
     Z = L*(z-100)/150
-    if (math.sqrt(X*X+Y*Y+Z*Z) < 15)  and (Y > 0) and (Z > 0) :
+    if (math.sqrt(X*X+Y*Y+Z*Z) < 15)  and (Y > 0) and (Z > y0) :
         culc_theta(X,Y,Z,n)
 
 
