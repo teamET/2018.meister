@@ -1,7 +1,13 @@
 from tornado import websocket
 from tornado import web
 from tornado import ioloop
+import pyzed.camera as zcam
+import pyzed.defines as sl
+import pyzed.types as tp
+import pyzed.core as core
 import cv2
+import numpy as np
+import math
 import base64
 import json
 import redis
@@ -17,23 +23,54 @@ class HTTPServerHandler(web.RequestHandler):
 
 class ImageBroadcastingHandler(websocket.WebSocketHandler):
     """
-     tornado.websocket.WebsocketHandlerを継承した，画像送信用のWebSocketServer。
-     掴むターゲットを指定するためのデータの受け渡しにredisを使用。
+    　tornado.websocket.WebsocketHandlerを継承した，画像送信用のWebSocketServer。
+    掴むターゲットを指定するためのデータの受け渡しにredisを使用。
 
     Attributes
     ----------
-    redis: RedisHandler
+    zed:
+        zedのオブジェクト
+    runtime_parameters:
+        zedの実行時のパラメータ
+    image:
+        darknetの検出後のイメージデータ
+    depth:
+        x, yを決めた上での奥行き
+    point_could:
+        ポイントクラウド
     """
+    def __init__(self, application, request, **kwargs):
+        """
+        　スーパークラスの初期化__init__()を実行し，また，ZEDの初期化も行う。
+
+        Parameters
+        ----------
+        application
+            super()の引数
+        request
+            super()の引数
+        kwargs
+            super()の引数
+        """
+        super().__init__(application, request, **kwargs)
+        self.zed = zcam.PyZEDCamera()
+        init_params = zcam.PyInitParameters()
+        init_params.depth_mode = sl.PyDEPTH_MODE.PyDEPTH_MODE_PERFORMANCE  # Use PERFORMANCE depth mode
+        init_params.coordinate_units = sl.PyUNIT.PyUNIT_MILLIMETER  # Use milliliter units (for depth measurements)
+        err = zed.open(init_params)
+        if err != tp.PyERROR_CODE.PySUCCESS:
+            print("zed open failed")
+            exit(1)
+        self.runtime_parameters = zcam.PyRuntimeParameters()
+        self.runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_STANDARD  # Use STANDARD sensing mode
+        self.image = core.PyMat()
+        self.depth = core.PyMat()
+        self.point_cloud = core.PyMat()
+
     def open(self, *args, **kwargs):
         """
-         WebSocket接続時に呼び出され，redisサーバとの接続，初期化を行う。
+         WebSocket接続時に呼び出される。
         """
-        self.redis = redis.Redis(host='localhost', port=6379, db=0)
-        print('Opened redis server connection.')
-        self.redis.delete('available')
-        print('Initialized set object \'available\' in redis.')
-        self.redis.delete('target')
-        print('Initialized string object \'target\' in redis.')
         print('Opened web socket connection.')
 
     def on_close(self):
@@ -45,7 +82,7 @@ class ImageBroadcastingHandler(websocket.WebSocketHandler):
 
     def on_message(self, message):
         """
-        　接続されたWebSocketからデータを受け取った時に実行。クライアントには定期的に画像ファイルのリクエストを送るようにさせ，
+         接続されたWebSocketからデータを受け取った時に実行。クライアントには定期的に画像ファイルのリクエストを送るようにさせ，
         'request-img'が送られたら画像データをbase64にして送信し，その他の文字列であった場合は，availableの中にあるものであれば
         redisのtargetに入れる。
 
@@ -68,7 +105,7 @@ class ImageBroadcastingHandler(websocket.WebSocketHandler):
 
     def send_image(self, img, available):
         """
-        　WebSocketを使用した画像送信用のメソッド。
+         WebSocketを使用した画像送信用のメソッド。
         画像イメージをpng形式に圧縮しbase64で送信。
 
         Parameters
@@ -96,3 +133,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
