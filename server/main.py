@@ -1,7 +1,7 @@
 import socket
 import json
 #from lynxmoton import move
-import al5d
+from lynxmotion import al5d
 import os, sys, inspect,time,math
 from time import sleep
 
