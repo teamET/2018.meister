@@ -21,6 +21,7 @@ def test_image():
     img2 = Image(img)
 
     results = net.detect(img2)
+    print(results)
 
     results_labels = [x[0].decode("utf-8") for x in results]
 

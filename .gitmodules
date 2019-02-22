@@ -1,0 +1,6 @@
+[submodule "client/YOLO3-4-Py"]
+	path = client/YOLO3-4-Py
+	url = https://github.com/madhawav/YOLO3-4-Py
+[submodule "server/lynxmotion"]
+	path = server/lynxmotion
+	url = https://github.com/cberner/lynxmotion
