@@ -27,7 +27,7 @@ def send(message):
     sock.sendto(message.encode('utf-8'),(UDP_IP,UDP_PORT))
     sleep(0.01)
 
-def get_distance(x,y):
+def get_distance(point_cloud,x,y):
     err, point_cloud_value = point_cloud.get_value(x, y)
     distance = math.sqrt(point_cloud_value[0] * point_cloud_value[0] +
                          point_cloud_value[1] * point_cloud_value[1] +
@@ -53,7 +53,6 @@ def get_available():
     runtime_parameters.sensing_mode = sl.PySENSING_MODE.PySENSING_MODE_STANDARD  # Use STANDARD sensing mode
 
     image = core.PyMat()
-    image = np.delete(image,3,2)
     depth = core.PyMat()
     point_cloud = core.PyMat()
 
@@ -62,17 +61,18 @@ def get_available():
             zed.retrieve_image(image, sl.PyVIEW.PyVIEW_LEFT)
             zed.retrieve_measure(depth, sl.PyMEASURE.PyMEASURE_DEPTH)
             zed.retrieve_measure(point_cloud, sl.PyMEASURE.PyMEASURE_XYZRGBA)
-            print(type(image),type(image.get_data()),type(np.asarray(image.get_data)))
+#            print(type(image),type(image.get_data()),type(np.asarray(image.get_data)))
 
-            results = net.detect(Image(np.asarray(image.get_data())))
+            image_mat = np.delete(image.get_data(),3,2)
+            results = net.detect(Image(image_mat))
             print("darknet result",results)
             for cat, score, bounds in results:
                 x, y, w, h = bounds
-                distance=get_distance(x,y)
+                distance=get_distance(point_cloud,x,y)
                 if not np.isnan(distance) and not np.isinf(distance):
                     distance = round(distance)
                     print("Distance to Camera at ({0}, {1}): {2} mm\n".format(x, y, distance))
-                    items["available"].appned((
+                    items["available"].extned((
                                 cat,
                                 score,
                                 (x,y,distance,w,h))
