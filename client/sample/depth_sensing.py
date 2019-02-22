@@ -59,6 +59,10 @@ def main():
             zed.retrieve_measure(depth, sl.PyMEASURE.PyMEASURE_DEPTH)
             # Retrieve colored point cloud. Point cloud is aligned on the left image.
             zed.retrieve_measure(point_cloud, sl.PyMEASURE.PyMEASURE_XYZRGBA)
+            print(type(image))
+            print(np.shape(image))
+            print(type(image.get_data()))
+            print(np.shape(image.get_data()))
 
             # Get and print distance value in mm at the center of the image
             # We measure the distance camera - object using Euclidean distance

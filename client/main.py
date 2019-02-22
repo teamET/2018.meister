@@ -37,7 +37,7 @@ def get_distance(x,y):
 
 def get_available():
     # darknet
-    cfg,weights,data="cfg/yolov3.cfg","yolov3.weights","cfg/coco.data"
+    cfg,weights,data="cfg/yolov3-openimages.cfg","yolov3-openimages.weights","cfg/openimages.data"
     net=Detector(bytes(cfg,encoding="utf-8"),bytes(weights,encoding="utf-8"),0,bytes(data,encoding="utf-8"))
 
     # zed
@@ -61,8 +61,9 @@ def get_available():
             zed.retrieve_image(image, sl.PyVIEW.PyVIEW_LEFT)
             zed.retrieve_measure(depth, sl.PyMEASURE.PyMEASURE_DEPTH)
             zed.retrieve_measure(point_cloud, sl.PyMEASURE.PyMEASURE_XYZRGBA)
+            print(type(image),type(image.get_data()),type(np.asarray(image.get_data)))
 
-            results = net.detect(image)
+            results = net.detect(Image(np.asarray(image.get_data())))
             print("darknet result",results)
             for cat, score, bounds in results:
                 x, y, w, h = bounds

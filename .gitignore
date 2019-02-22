@@ -1,3 +1,7 @@
+*.weights
+weights/
+
+
 ### user configuration ###
 *.log
 *.md

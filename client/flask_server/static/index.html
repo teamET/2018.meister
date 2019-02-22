@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+    <head>
+        <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+    </head>
+    <body>
+        <h1> hello jetmotion</h1>
+        <div id="log"></div>
+        <script>
+            namespace="/test"
+            var socket=io.connect("http://"+document.domain+":"+location.port+namespace);
+
+            socket.on("connect",function(){
+                socket.emit('sample_event',{data:"hello jetmotion sample_event"});
+            });
+
+            socket.on("responce",function(msg){
+                document.getElementById('log').innerHTML+='<p>' +  msg.count + ': ' + msg.data+'</p>';
+            });   
+        </script>
+    </body>
+</html>
+
