@@ -8,20 +8,6 @@ DATA_SIZE = 1024
 
 
 class UDPServer(object):
-    """
-     x-y-zの座標を受け取るためのUDPサーバ。
-
-    Attributes
-    ----------
-    addr: str
-        ホストのアドレス
-    port: str
-        ホストのポート
-    data_size: int
-        socket.recv()のバッファーサイズ
-    sock: socket
-        UDPソケット
-    """
     def __init__(self):
         self.addr = HOST_ADDR
         self.port = HOST_PORT
@@ -33,12 +19,6 @@ class UDPServer(object):
             self.sock.close()
 
     def run(self):
-        """
-        Parameters
-        ----------
-        raw: str
-            "関数名/{x:100,y:200,z:400}"
-        """
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.sock.bind((self.addr, self.port))
         while True:

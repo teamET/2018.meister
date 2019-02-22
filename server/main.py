@@ -1,172 +1,160 @@
-
-from abc import ABCMeta,abstractmethod
-from icecream import ic
-from numba import jit
-import httpserver
-import os
-import sys
 import socket
-import importlib
-import threading
+import json
+#from lynxmoton import move
+import al5d
+import os, sys, inspect,time,math
+from time import sleep
 
-MOTOR_NUM=8
-pwms=[0 for i in range(MOTOR_NUM)]
-mode=0
+a = al5d.AL5D('COM5')
+a.init()
 
-class  UdpServer():
-    def __init__(self,shared_data):
-#        super(SubUdpServer,self).__init__()
-        self.UDP_IP=""
-        self.UDP_PORT=5005
-        self.backlog=10
-        self.bufsize=1024
-        self.data=shared_data
-    def __del__(self):
-        socket.close()
-    def is_json(myjson):
-        try:
-            json_object = json.loads(myjson)
-        except ValueError as e:
-            return False
-        return True
-    @jit(nogil=True)
-    def run(self):
-        print('===  Sub Thread Starts===')
-        print("PORT",self.UDP_PORT)
-        sock=socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-        sock.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
-#        with closing(sock):
-        sock.bind((self.UDP_IP,self.UDP_PORT))
-        while True:
-            cnt=0
-            mes=sock.recv(self.bufsize)
-            raw=mes.decode('utf-8')
-            print('mes',mes,'raw',raw)
-            if raw == 'q':
-                print('Sub process is terminated')
-                break
-            elif raw is not '' : #and  self.is_json(raw) ==True:
-                pwm_str=raw.split(',')
-                for pwm in map(int,pwm_str):
-                    self.data[cnt]=pwm
-                    cnt+=1
-                print(self.data)
-            else:
-                print('empty message or not json ')
-#                time.sleep(1)
+# udp server constance
+HOST_ADDR = '127.0.0.1'
+HOST_PORT = 50007
+DATA_SIZE = 1024
 
-class Motor(metaclass=ABCMeta):
-    last=[0 for i in range(4)]
-    current_rate=[0 for i in range(4)]
-    step=10
-    pins=[]
-    def __init__(self,pins):
-        pass
-    def acceleration(self,port,target):
-        if target > self.last[port]:
-            return  self.last[port]+self.step
-        elif target < self.last[port]:
-            return self.last[port]-self.step
-        else :
-            return self.last[port]
-    @abstractmethod
-    def drive():
-        pass
-
-    @abstractmethod
-    def drive_pin():
-        pass
-
-    @abstractmethod
-    def run():
-        pass
-
-class PiMotor(Motor):
-    def __init__(self,pins):
-        pigpio=importlib.import_module("pigpio")
-#        pigpio=importlib.util.find_spec("pigpio")
-        if pigpio is None:
-            print("pigpio is not found")
-            return None
-        self.pi=pigpio.pi()
-        print('initialized pin is ',pins)
-        self.pins=pins
-        for pins in self.pins:
-            for pin in pins:
-                self.pi.set_mode(pin,pigpio.OUTPUT)
-        ic("pins",pins,self.pins)
-
-    def drive(self,port,target_rate):
-        self.current_rate[port]=target_rate
-        print('port',port,'target',target_rate,'current',self.current_rate[port])
-        if self.last[port] * target_rate < 0:
-            time.sleep(0.0001)
-        self.drive_pin(port,self.current_rate[port])
-        self.last[port]=self.current_rate[port]
-    def drive_pin(self,port,rate,BREAK=False):
-        print('port:',port,'pin0,1:',self.pins[port],self.pins[0][0],self.pins[0][1],rate)
-        if rate > 0:
-            self.pi.set_PWM_dutycycle(self.pins[port][0],rate)
-            self.pi.set_PWM_dutycycle(self.pins[port][1],0)
-        elif rate <0:
-            self.pi.set_PWM_dutycycle(self.pins[port][0],0)
-            self.pi.set_PWM_dutycycle(self.pins[port][1],-rate)
-        elif BREAK is True:
-            self.pi.set_PWM_dutycycle(self.pins[port][0],254)
-            self.pi.set_PWM_dutycycle(self.pins[port][1],254)
-    @jit(nogil=True)
-    def run(self):
-        while True:
-#            ic(pwms)
-            for i in range(4):
-                self.drive(i,pwms[i]);
-class Arm:
-    pass
+# arm constance 
+theta_4 = math.pi/4
+y0 = 3.03
+L_1 = 5.75
+L_2 = 7.375
+L_3 = 3.375
 
 
-class TxMotor(Motor):
-    def __init__(self):
-        return None
-    def drive():
-        pass
-    def drive_pin():
-        pass
+def setup_leap():
+    src_dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
+    arch_dir = 'lib/x64' if sys.maxsize > 2**32 else 'lib/x86'
+    sys.path.insert(0, os.path.abspath(os.path.join(src_dir, arch_dir)))
+
+    src_dir = os.path.dirname(inspect.getfile(inspect.currentframe()))
+    lib_dir = os.path.abspath(os.path.join(src_dir, 'lib'))
+    sys.path.insert(0, lib_dir)
+    import Leap
 
 
-motor=None
-try:
-    motor=PiMotor([[14,15],[23,24],[8,7],[16,20]])
-except ModuleNotFoundError:
-    print("pigpio not found")
-except Exception as e:
-    print(e)
+def inch_to_centimeter(n) :
+    return n/2.54
 
-try:
-    motor=TxMotor
-except Exception as e:
-    print('tx2 not found')
+def culc_theta(x,y,z,n) :
+    z = z-y0
+    X = math.hypot(x,y)		
+    theta_1 = math.atan(y/x)
+    print(theta_1)
+    if theta_1 < 0 : theta_1 = theta_1 + math.pi
+    theta_5 = math.atan((L_3*math.sin(theta_4))/(L_2+L_3*math.cos(theta_4)))
+    if theta_5 < 0 : theta_5 = theta_5+math.pi
+    L_23 = math.hypot((L_3*math.sin(theta_4)),(L_2+L_3*math.cos(theta_4)))
+    if (X*X+z*z-L_1*L_1-L_23*L_23)/(2*L_1*L_23) > -1:
+        theta_35 = math.acos((X*X+z*z-L_1*L_1-L_23*L_23)/(2*L_1*L_23))
+    else :
+        theta_35 = math.acos(-1)
+    theta_3 = theta_35-theta_5
+    theta_6 = math.atan((L_23*math.sin(theta_35))/(L_1+L_23*math.cos(theta_35)))
+    if theta_6 < 0 : theta_6 = theta_6 + math.pi
+    theta_2 = theta_6+math.atan(z/X)
+    if theta_2 > math.pi/2 : theta_2 = theta_2-math.pi
+    return theta_1,theta_2,theta_3,theta_4
 
-udpserver=UdpServer(pwms)
-def main():
-    if motor is None:
-        print("gpio setting is not complete")
-        sys.exit()
-    threads=[
-            threading.Thread(target=motor.run),
-#            threading.Thread(target=httpserver.run),
-            threading.Thread(target=udpserver.run)]
-    for thread in threads:
-        thread.start()
-    for thread in threads:
-        thread.join()
-#    motor.run()
+    """
+    a.base(theta_1)
+    a.shoulder(theta_2)
+    a.elbow(theta_3)
+    if n == 1.0 : a.wrist(-math.pi / 3)
+    else : a.wrist(math.pi / 3)
+#    print(theta_1,theta_2,theta_3,theta_4)
+    return theta_1,theta_2,theta_3,theta_4
+    """
 
-if __name__ == '__main__':
+
+def culc_xyz(x,y,z,n) :
+    L = math.sqrt(2*(L_1+L_2)*L_3*math.cos(theta_4)+L_3*L_3+(L_1+L_2)*(L_1+L_2))
+    X = L*x/150
+    Y = -L*y/150
+    Z = L*(z-100)/150
+    if (math.sqrt(X*X+Y*Y+Z*Z) < 15)  and (Y > 0) and (Z > 0) :
+        return culc_theta(X,Y,Z,n)
+
+
+class SampleListener(Leap.Listener):
+    def on_connect(self,controller):
+        print "connected"
+    def on_frame(self,controller):
+        frame = controller.frame()
+        hands = frame.hands
+        hand = hands[0] # first hand
+        theta1,theta2,theta3,theta4 = culc_xyz(hand.palm_position[0],hand.palm_position[2],hand.palm_position[1],hand.grab_strength)
+
+def leap_main():
+    setup_leap()
+    listener=SampleListener()
+    controller=Leap.Controller()
+    controller.add_listener(listener)
+    controller.set_policy(Leap.Controller.POLICY_BACKGROUND_FRAMES)
+    controller.set_policy(controller.POLICY_IMAGES)
+    controller.enable_gesture(Leap.Gesture.TYPE_SWIPE)
+
+    while True : pass
+    #frame=controller.frame()
+    pointable = frame.pointables.frontmost
+    direction = pointable.direction
+    length = pointable.length
+    width = pointable.width
+    stabilizedPosition = pointable.stabilized_tip_position
+    position = pointable.tip_position
+    speed = pointable.tip_velocity
+    touchDistance = pointable.touch_distance
+    zone = pointable.touch_zone
+
+    
+    print "Press Enter to Quit"
     try:
-        main()
-    except KeyboardInterrupt:
-        print("system interupted")
-        del udpserver
-        del httpserver
-        del motor
-        os.exit()
+        sys.stdin.readline()
+    except KeyboardInterpt:
+        pass
+    finally:
+        controller.remove_listener(listener)
+
+def move(x,y,z,strngth):
+    theta1,theta2,theta3,theta4= culc_xyz(x,y,z)
+    a.base(theta1)
+    a.shoulder(theta2)
+    a.elbow(theta3)
+    if strength == 1.0 : a.wrist(-math.pi / 3)
+    else : a.wrist(math.pi / 3)
+
+
+
+class UDPServer(object):
+    def __init__(self):
+        self.addr = HOST_ADDR
+        self.port = HOST_PORT
+        self.data_size = DATA_SIZE
+        self.sock = None
+
+    def __del__(self):
+        if self.sock:
+            self.sock.close()
+
+    def run(self):
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.sock.bind((self.addr, self.port))
+        while True:
+            raw = self.sock.recv(self.data_size).decode()
+            try:
+                func,data=raw.split("/")
+                print(func,data)
+                yield func,data
+            except:
+                print("Error occured",raw)
+                continue
+
+def main():
+    udp = UDPServer()
+    funcs=[
+            move
+            ]
+    for func,data in udp.run():
+        locals().get(func)(**json.loads(data))
+
+if __name__=='__main__':
+    main()
