@@ -6,7 +6,7 @@ from time import sleep
 import socket,json
 import lynx
 
-H = 0
+H = 80
 D = 1000
 
 HOST_ADDR = '127.0.0.1'
@@ -66,10 +66,11 @@ class UDPServer(object):
                 print("Error occured",raw)
                 continue
 
-def culc_xyz(x,y,z) ;
+def culc_xyz(x,y,z) :
     X = -x
-    Y = D-y
+    Y = D-z
     Z = H-y
+    print(X,Y,Z)
     return (X,Y,Z)
 
 
