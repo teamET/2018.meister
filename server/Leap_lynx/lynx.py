@@ -36,7 +36,7 @@ def gripper(n) :
 
 def move(x,y,z) :
     if x==0 and y==0 and z==0 : a.init()
-    elif z>y0  and 22500<x*x+y*y+(z-y0)*(z-y0)<90000 :
+    elif y>0 and z>0  and 22500<x*x+y*y+(z-y0)*(z-y0)<90000 :
         move_to_xyz(x,y,z)
     else : 
         print("The entered coordinates are invalid.")
