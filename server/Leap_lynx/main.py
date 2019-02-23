@@ -20,7 +20,9 @@ class SampleListener(Leap.Listener):
         frame = controller.frame()
         hands = frame.hands
         hand = hands[0] # first hand
-        lynx.move_from_Leap(hand.palm_position[0],hand.palm_position[2],hand.palm_position[1])
+        print(hand.palm_position[0],-hand.palm_position[2],hand.palm_position[1])
+#        lynx.move(hand.palm_position[0],-hand.palm_position[2],hand.palm_position[1])
+        lynx.move(150,150,150)
         lynx.gripper(hand.grab_strength)        
         
 def main():
